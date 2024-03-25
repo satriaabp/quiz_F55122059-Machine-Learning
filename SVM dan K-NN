@@ -1,0 +1,105 @@
+# Import library
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from skimage.io import imread
+from skimage.transform import resize
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+
+# Fungsi untuk memuat dataset gambar
+def load_images(folder_path):
+    images = []
+    labels = []
+    for label in os.listdir(folder_path):
+        label_path = os.path.join(folder_path, label)
+        for filename in os.listdir(label_path):
+            img_path = os.path.join(label_path, filename)
+            image = imread(img_path)
+            if len(image.shape) == 3:  # Memastikan gambar memiliki tiga dimensi
+                image_resized = resize(image, (100, 100, image.shape[2]))  # Mengubah ukuran gambar menjadi 100x100 piksel
+                images.append(image_resized.flatten())  # Flattening gambar menjadi vektor fitur
+                labels.append(label)
+    return np.array(images), np.array(labels)
+
+# Fungsi untuk memuat dataset gambar testing
+def load_test_images(folder_path):
+    images = []
+    labels = []
+    for label in os.listdir(folder_path):
+        label_path = os.path.join(folder_path, label)
+        for filename in os.listdir(label_path):
+            img_path = os.path.join(label_path, filename)
+            image = imread(img_path)
+            if len(image.shape) == 3:  # Memastikan gambar memiliki tiga dimensi
+                image_resized = resize(image, (100, 100, image.shape[2]))  # Mengubah ukuran gambar menjadi 100x100 piksel
+                images.append(image_resized.flatten())  # Memuat gambar tanpa proses flatten
+                labels.append(label)
+    return np.array(images), np.array(labels)
+
+# Fungsi untuk menampilkan beberapa contoh gambar beserta prediksinya
+def plot_predicted_images(images, labels_true, labels_pred, n_samples=5):
+    fig, axes = plt.subplots(1, n_samples, figsize=(15, 5))
+    for i, ax in enumerate(axes):
+        ax.imshow(images[i].reshape(100, 100, 3))  # Mengubah vektor fitur kembali ke bentuk gambar
+        ax.set_title(f'True: {labels_true[i]}, Pred: {labels_pred[i]}')
+        ax.axis('off')
+    plt.show()
+
+# Memuat dataset gambar
+folder_path = r"D:\TUGAS\SEMESTER 4\Machine Learning\Tugas 1\dataset"  # Path folder dataset gambar
+X, y = load_images(folder_path)
+
+# Pembagian data menjadi data latih dan data uji
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Preprocessing: Penskalaan fitur menggunakan StandardScaler
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Inisialisasi dan pelatihan model SVM
+svm_classifier = SVC(kernel='linear')
+svm_classifier.fit(X_train_scaled, y_train)
+
+# Prediksi menggunakan data uji
+y_pred_svm = svm_classifier.predict(X_test_scaled)
+
+# Mengukur akurasi SVM
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+print("Akurasi model SVM:", accuracy_svm)
+
+# Inisialisasi dan pelatihan model k-NN
+knn_classifier = KNeighborsClassifier(n_neighbors=5)
+knn_classifier.fit(X_train_scaled, y_train)
+
+# Prediksi menggunakan data uji untuk k-NN
+y_pred_knn = knn_classifier.predict(X_test_scaled)
+
+# Mengukur akurasi k-NN
+accuracy_knn = accuracy_score(y_test, y_pred_knn)
+print("Akurasi model k-NN:", accuracy_knn)
+
+# Memuat dataset gambar testing
+test_folder_path = r"D:\TUGAS\SEMESTER 4\Machine Learning\Tugas 1\dataset_testing"  # Path folder dataset gambar testing
+X_test_data, y_test_data = load_test_images(test_folder_path)
+
+# Preprocessing data testing: Penskalaan fitur menggunakan StandardScaler
+X_test_data_scaled = scaler.transform(X_test_data)
+
+# Prediksi menggunakan data testing untuk k-NN
+y_test_pred_knn = knn_classifier.predict(X_test_data_scaled)
+
+# Mengukur akurasi pada data testing untuk k-NN
+accuracy_test_knn = accuracy_score(y_test_data, y_test_pred_knn)
+print("Akurasi model k-NN pada data testing:", accuracy_test_knn)
+
+# Memvisualisasikan beberapa contoh gambar dan prediksinya untuk SVM
+n_samples_to_visualize = 4
+plot_predicted_images(X_test, y_test, y_pred_svm, n_samples=n_samples_to_visualize)
+
+# Memvisualisasikan beberapa contoh gambar dan prediksinya untuk k-NN
+plot_predicted_images(X_test_data, y_test_data, y_test_pred_knn, n_samples=n_samples_to_visualize)
